@@ -30,14 +30,14 @@ syntax enable
 set tabstop=4
 set expandtab           "use spaces to replace tab
 set autoindent          "automatic indentation
-set shiftwidth=4        "this is the level of autoindent, adjust to taste
+set shiftwidth=4        "this is the level of autoindent/fold, adjust to taste
 set ruler               "set to show line number and charactor number
 set number              "set linenumber
 set backspace=indent,eol,start
 set visualbell
 set colorcolumn=80
 set hlsearch            "set search result to be high lighted
-set list listchars=trail:�
+set list listchars=trail:·
 set foldmethod=manual
 set modeline            "enable modeline
 set modelines=20        "set modelines to 20 to skip the copyright notice
@@ -51,16 +51,23 @@ autocmd FileType make,python set noexpandtab
 " set textwidth = 79, so textwrapping and gq} will work
 autocmd FileType cpp,vim,xsd,python,c,javascript,sh set tw=79
 " set tab to be hlighlighted
-autocmd FileType cpp,c,javascript set listchars=tab:��,trail:�
+autocmd FileType cpp,c,javascript set listchars=tab:»·,trail:·
 
 " cmake pattern match
-autocmd BufRead,BufNew */libs-vrs/*.t.cpp set makeprg=make\ -C\ cmake.bld/Linux/\ %:t:r
+autocmd BufEnter */libs-vrs/*.t.cpp set makeprg=make\ -C\ cmake.bld/Linux/\ %:t:r
+autocmd BufLeave */libs-vrs/*.t.cpp set makeprg=make
 
 " schema make
-autocmd FileType xsd set makeprg=make\ schema
+autocmd FileType xsd autocmd BufEnter <buffer> set makeprg=make\ schema
+autocmd FileType xsd autocmd BufLeave <buffer> set makeprg=make
 
 " remove trailing space on certain filetype
 autocmd FileType cpp,c,javascript,python autocmd BufWrite <buffer> silent! %s/\s\+$//g
+
+" debug
+" autocmd Filetype * echom "ft set to " &filetype
+" autocmd BufEnter * echom "BufEnter to " @%
+" autocmd Filetype * autocmd BufEnter <buffer> echom "ft:" &filetype " BufEnter:" @%
 
 " no absolute linenumber for file has more than 999 line
 function SetLineNumber()
@@ -162,7 +169,7 @@ nmap <leader><leader>b <leader>bnd
 
 " ctrlp plugin
 nmap <leader>cpp :CtrlP .<CR>
-nmap <leader>cqq :CtrlP ..<CR>
+nmap <leader>cpq :CtrlP ..<CR>
 nmap <leader><leader>p <leader>cpp
 nmap <leader><leader>q <leader>cpq
 
