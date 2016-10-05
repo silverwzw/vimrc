@@ -1,38 +1,87 @@
-"""""""""""""""""""""""""""Plugin Settings"""""""""""""""""""""""""""""""""""""
-set nocompatible
-filetype off
+"==============================================================================
+"                                  PLUGINS
+"==============================================================================
+
+set nocompatible                         " required by Vundle
+filetype off                             " required by Wundle
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 
 Plugin 'gmarik/Vundle.vim'
 Plugin 'kien/ctrlp.vim'
-Plugin 'terryma/vim-multiple-cursors'
 Plugin 'MovEaxEsp/bdeformat'
 Plugin 'wesQ3/vim-windowswap'
-
-if $ARCSTR_CM == "Linux"
-    Plugin 'Valloric/YouCompleteMe'
-endif
+Plugin 'Valloric/MatchTagAlways'
+Plugin 'dbakker/vim-projectroot'
 
 call vundle#end()
-filetype plugin indent on
+filetype plugin indent on                " required by Vundle
 
-set filetype=unix
+                            " =============== "
+                            " Plugin Settings "
+                            " =============== "
 
-syntax enable
+" let g:ycm_global_ycm_extra_conf = '~/.vim/ycm_extra_conf.py'
 
-"""""""""""""""""""""""""""""""Settings""""""""""""""""""""""""""""""""""""""""
-"Information on the following setting can be found with
-":help set
+let g:ctrlp_follow_symlinks = 1
+let g:ctrlp_custom_ignore = {
+    \ 'dir': '\.cmake.bld$'
+    \ }
 
-">>>>>>> Common Settings <<<<<<
+"==============================================================================
+"                                 FUNCTIONS
+"==============================================================================
+
+function ToggleExtension()
+    let l:extension = expand("%:e")
+    if l:extension ==? "h"
+        execute ":e %<.cpp"
+    elseif l:extension ==? "cpp"
+        execute ":e %<.h"
+    elseif l:extension ==? "js"
+        execute ":e %<.bml"
+    elseif l:extension ==? "bml"
+        execute ":e %<.js"
+    endif
+endfunction
+
+function SetLineNumber()
+    if line('$') > 999
+        setlocal nonumber relativenumber
+    else
+        setlocal number norelativenumber
+    endif
+endfunction
+
+function SetSpellFile()
+    try
+        let l:cmd = ":setlocal spellfile=" . ProjectRootGuess() . "/.repo-dictionary.utf-8.add"
+        execute l:cmd
+    catch
+    endtry
+endfunction
+
+"==============================================================================
+"                                 VARIABLES
+"==============================================================================
+
+autocmd BufEnter * let b:extension = expand("%:e")
+autocmd BufEnter * let b:project_root = ProjectRootGuess()
+
+"==============================================================================
+"                                 SETTINGS
+"==============================================================================
+
+                              " ================ "
+                              " Default Settings "
+                              " ================ "
 
 set tabstop=4
 set expandtab           "use spaces to replace tab
 set autoindent          "automatic indentation
-set shiftwidth=4        "this is the level of autoindent/fold, adjust to taste
-set ruler               "set to show line number and charactor number
-set number              "set linenumber
+set shiftwidth=4        "this is the level of indent/fold
+set ruler               "set to show line number and column number
+set number              "set line number
 set backspace=indent,eol,start
 set visualbell
 set colorcolumn=80
@@ -41,86 +90,87 @@ set list listchars=trail:·
 set foldmethod=manual
 set modeline            "enable modeline
 set modelines=20        "set modelines to 20 to skip the copyright notice
+set spell
+set filetype=unix
 
-">>>>>> Conditional Settings <<<<<<
+syntax enable
+
+                            " ==================== "
+                            " Conditional Settings "
+                            " ==================== "
 
 " set \t not expanded to spaces for Makefile --> Makefile require \t to parse
 " (and python)
-autocmd FileType make,python set noexpandtab
+autocmd FileType make,python autocmd BufEnter <buffer> setlocal noexpandtab
 
 " set textwidth = 79, so textwrapping and gq} will work
-autocmd FileType cpp,vim,xsd,python,c,javascript,sh set tw=79
+autocmd FileType cpp,vim,xsd,python,c,javascript,sh setlocal tw=79
 " set tab to be hlighlighted
-autocmd FileType cpp,c,javascript set listchars=tab:»·,trail:·
+autocmd FileType cpp,c,javascript setlocal listchars=tab:»·,trail:·
 
 " cmake pattern match
-autocmd BufEnter */libs-vrs/*.t.cpp set makeprg=make\ -C\ cmake.bld/Linux/\ %:t:r
-autocmd BufLeave */libs-vrs/*.t.cpp set makeprg=make
+autocmd BufEnter */blt/*.t.cpp,*/libs-vrs/*.t.cpp,*/libs-rav/*.t.cpp,*/rplus/*.t.cpp,*/tdk/*.t.cpp setlocal makeprg=make\ -C\ cmake.bld/Linux/\ %:t:r
+autocmd FileType cpp autocmd BufEnter */blt/*,*/libs-rav/*,*/rplus/*,*/tdk/* setlocal makeprg=make\ -C\ cmake.bld/Linux/
 
 " schema make
-autocmd FileType xsd autocmd BufEnter <buffer> set makeprg=make\ schema
-autocmd FileType xsd autocmd BufLeave <buffer> set makeprg=make
+autocmd FileType xsd autocmd BufEnter <buffer> setlocal makeprg=make\ schema
 
 " remove trailing space on certain filetype
-autocmd FileType cpp,c,javascript,python autocmd BufWrite <buffer> silent! %s/\s\+$//g
+autocmd FileType cpp,c,javascript,python,xml autocmd BufWrite <buffer> silent! %s/\s\+$//g
 
-" debug
+" set rules for bml
+autocmd BufEnter *.bml setlocal ft=xml syntax=xml tabstop=2 shiftwidth=2 expandtab
+
+" no absolute linenumber for file has more than 999 line
+" by default apply this line number setting
+autocmd BufRead,BufNew * call SetLineNumber()
+" line number and colorcolumn make no sense in quick fix buffer
+autocmd Filetype qf,gitgrep autocmd BufRead,BufNew <buffer> setlocal nonumber norelativenumber colorcolumn=
+
+" debug settings
 " autocmd Filetype * echom "ft set to " &filetype
 " autocmd BufEnter * echom "BufEnter to " @%
 " autocmd Filetype * autocmd BufEnter <buffer> echom "ft:" &filetype " BufEnter:" @%
 
-" no absolute linenumber for file has more than 999 line
-function SetLineNumber()
-    if line('$') > 999
-        set nonumber relativenumber
-    else
-        set number norelativenumber
-    endif
-endfunction
-" by default apply this line number setting
-autocmd BufRead,BufNew * call SetLineNumber()
-" line number and colorcolumn make no sense in quick fix buffer
-autocmd Filetype qf autocmd BufRead,BufNew <buffer> set nonumber norelativenumber colorcolumn=
+                           " ==================== "
+                           " Colorscheme Settings "
+                           " ==================== "
 
-"^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-" Uncomment below to make screen not flash on error
-" set vb t_vb=""
-let g:ycm_global_ycm_extra_conf = '/home/zwang311/.vim/ycm_extra_conf.py'
-let g:ctrlp_follow_symlinks = 1
-syntax on
-
-"===================This is solarized colorscheme settings=====================
-
-" >>>>>>> Solarized <<<<<<<
+" Solarized Color Scheme
 set t_Co=256
 set background=dark
 let g:solarized_termcolors=256
+let g:solarized_italic=0
 colorscheme solarized
 
-" >>>>>>> Primary <<<<<<<<
+" Primary Color Scheme
 "set t_Co=256
 "set background=light
 "colorscheme primary
 
-"^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                              " ============= "
+                              " Misc Settings "
+                              " ============= "
 
-"================================Functions=====================================
+" Screen not flash on error
+" set vb t_vb=""
 
-function ToggleHeaderAndImpl()
-    let b:extension = expand("%:e")
-    if b:extension ==? "h"
-        execute ":e %<.cpp"
-    elseif b:extension ==? "cpp"
-        execute ":e %<.h"
-    endif
-endfunction
+" High light all WORKING keyword
+autocmd BufEnter * match CursorLineNr /\<WORKING\>/
 
-"===============================Keymappings====================================
+" set project specific dictionary
+autocmd BufEnter * call SetSpellFile()
 
+"==============================================================================
+"                               KEY MAPPINGS
+"==============================================================================
+
+" set mapping leader pattern
 let mapleader = ','
 
-">>>>>>> Helper Keymappings <<<<<<<
+                             " =============== "
+                             " Helper Mappings "
+                             " =============== "
 
 " mark current cursor to cursor location 'z' and copy current identifier to
 " register 'z', mark the position of first char of current identifier to
@@ -132,17 +182,19 @@ nmap ,,1 mz/^\\|[^0-9A-Za-z_]<CR>?[0-9A-Za-z_]<CR>my?$\\|[^0-9A-Za-z_]<CR>/[0-9A
 nmap ,,2 mz/^\\|[^0-9A-Za-z_:]<CR>?[0-9A-Za-z_:]<CR>my?$\\|[^0-9A-Za-z_:]<CR>/[0-9A-Za-z:_]<CR>mxv`y"zy
 nmap ,,3 mz/^\\|\s<CR>?\S<CR>my?$\\|\s<CR>/\S<CR>mxv`y"zy
 
-">>>>>>>> Mapping table <<<<<<<
-"
-" * F key mappings not included in this table
-"
+                              " ============= "
+                              " Mapping table "
+                              " ============= "
+
 "  KEY   SHORT                           DESCRIPTION
 " ----- ------- --------------------------------------------------------------
-"  bbf   f       find a Bloomberg type definition (in XML Schema, C++ header)
+"  ast   a       add ASSERT(...)
+"  bbf   f       find a Bloomberg type definition (in XML Schema or C++ header)
 "  bnd   b       bind scrolling
 "  cpp   p       ctrlp plugin for .
 "  cpq   q       ctrlp plugin for ..
 "  err   c       open compiler error window at most bottom position
+"  ggp   g       do git grep 
 "  hic   *       highlight the identifier by cursor, independent to search
 "  hii   /       highlight the text (to be input), independent to search
 "  inc   i       add include for text under cursor
@@ -153,9 +205,17 @@ nmap ,,3 mz/^\\|\s<CR>?\S<CR>my?$\\|\s<CR>/\S<CR>mxv`y"zy
 "  tbd   t       add TODO comment block
 "  tgd   dt      delete a HTML/XML tag
 "  tgy   yt      copy a HTML/XML tag
-"  thi   h       toggle header and implementation
+"  thi   h       toggle header and implementation/bml and js
 
-">>>>>>>> Mapping Defs <<<<<<<
+" * F key mappings not included in this table
+
+                           " =================== "
+                           " Mapping Definitions "
+                           " =================== "
+
+" add assert
+nmap <leader>ast 0wiASSERT(<Esc>A);<Esc>j0
+nmap <leader><leader>a <leader>ast
 
 " find definition (C++ class, C++ macro def and xsd type)
 " (need silent here in case identifier is too long such that vim has to re-draw
@@ -176,6 +236,10 @@ nmap <leader><leader>q <leader>cpq
 " compile error window
 nmap <leader>err :bo cw<CR>
 nmap <leader><leader>c <leader>err
+
+" open git grep
+nmap <leader>ggp :bo new \| setlocal buftype=nofile filetype=gitgrep \| 0read !git grep 
+nmap <leader><leader>g <leader>ggp
 
 " hlights
 nmap <leader>hic :match ErrorMsg '<C-r><C-w>'<CR>
@@ -215,10 +279,12 @@ nmap <leader>tgy vity
 nmap <leader><leader>yt <leader>tgy
 
 " switch between header and cpp
-nmap <leader>thi :call ToggleHeaderAndImpl()<CR>
+nmap <leader>thi :call ToggleExtension()<CR>
 nmap <leader><leader>h <leader>thi
 
-">>>>>>>> <F2> - <F10> Keymappings <<<<<<<
+                              " ============== "
+                              " F-Key Mappings "
+                              " ============== "
 
 " find file and linenumber
 nmap <F5> /\w\+\(\(.h\)\\|\(.cpp\)\):\d\+<CR>
@@ -242,4 +308,8 @@ nmap <F11> yyppo<Esc>k:s/./-/g<CR>kk:s/./-/g<CR>vjj:s/^/\/\/ /<CR>vkk:ce<CR>jjj:
 " block header
 nmap <F12> 0v$gU:ce<CR>O// <Esc>a=<Esc>75.yyjpkR//<Esc>jo<Esc>0D
 
-"^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+"==============================================================================
+"                             MODELINE OVERRIDE
+"==============================================================================
+
+" vim: set colorcolumn=:
